@@ -9,7 +9,7 @@ FitPilot AI is an AI-powered gym management and personal fitness platform for gy
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — Supabase browser client configuration
 
 ## Stack
 
@@ -33,15 +33,17 @@ FitPilot AI is an AI-powered gym management and personal fitness platform for gy
 - `artifacts/fitpilot-ai/src/assets/` — app-owned asset location
 - `lib/api-spec/openapi.yaml` — source of truth for FitPilot API contracts
 - `artifacts/api-server/src/routes/fitpilot.ts` — FitPilot API routes
-- `artifacts/api-server/src/lib/fitpilot-seed.ts` — first-run seed data for the fresh fp_* model
-- `lib/db/src/schema/fitpilot.ts` — persistent gym and fitness data model
+- `artifacts/fitpilot-ai/supabase/migrations/202607230001_fitpilot.sql` — Supabase schema, triggers, Storage bucket, and RLS policies
+- `artifacts/fitpilot-ai/src/lib/supabase/` — browser client and shared Supabase types
+- `artifacts/fitpilot-ai/src/services/supabase/` — Auth, database query/mutation, and Storage helpers
 - `artifacts/fitpilot-ai/src/index.css` — shared light/dark theme tokens
 
 ## Architecture decisions
 
-- The frontend consumes generated OpenAPI hooks from `@workspace/api-client-react` rather than hand-written fetch types.
 - React Router owns route composition and nested layout rendering.
-- Gym and personal-fitness records use a fresh `fp_*` table namespace so this rebuild is isolated from the previous model.
+- Supabase Auth owns sessions, and every data query is authenticated and RLS-scoped.
+- Supabase PostgreSQL is the only application data source; no mock or seed fallback is used.
+- Supabase Storage owns private member avatar files under the `member-avatars` bucket.
 - The app uses a focused operational shell with route-level pages for overview, members, member profiles, programs, schedule, attendance, and insights.
 - Theme state is stored locally so each operator's light/dark preference persists between sessions.
 
@@ -63,8 +65,8 @@ FitPilot AI is an AI-powered gym management and personal fitness platform for gy
 
 ## Gotchas
 
-- After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
-- Verify both `pnpm --filter @workspace/api-server run typecheck` and `pnpm --filter @workspace/fitpilot-ai run typecheck` after API or UI changes.
+- Apply `artifacts/fitpilot-ai/supabase/migrations/202607230001_fitpilot.sql` in the Supabase SQL Editor before creating the first account.
+- Verify `pnpm --filter @workspace/fitpilot-ai run typecheck` after Supabase or UI changes.
 
 ## Pointers
 

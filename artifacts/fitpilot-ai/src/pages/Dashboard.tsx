@@ -1,5 +1,5 @@
 import { Activity, ArrowUpRight, TrendingUp, Users, Calendar, CheckCircle2 } from "lucide-react";
-import { useGetDashboardOverview, useGetAttendanceTrend, useGetRecentActivity } from "@workspace/api-client-react";
+import { useGetDashboardOverview, useGetAttendanceTrend, useGetRecentActivity } from "@/services/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";

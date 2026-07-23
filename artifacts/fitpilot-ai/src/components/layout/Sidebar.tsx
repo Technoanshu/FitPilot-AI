@@ -1,6 +1,8 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Activity, CalendarDays, ClipboardCheck, LayoutDashboard, Lightbulb, Users, Dumbbell } from "lucide-react";
+import { Activity, CalendarDays, ClipboardCheck, LayoutDashboard, Lightbulb, Users, Dumbbell, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSupabaseAuth } from "@/contexts/supabase-auth";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
@@ -13,6 +15,9 @@ const navigation = [
 
 export function Sidebar({ className }: { className?: string }) {
   const location = useLocation();
+  const { session, signOut } = useSupabaseAuth();
+  const displayName = session?.user.user_metadata?.full_name || session?.user.email?.split("@")[0] || "Gym owner";
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <div className={cn("w-64 border-r border-border bg-card flex flex-col", className)}>
@@ -57,13 +62,22 @@ export function Sidebar({ className }: { className?: string }) {
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 px-2">
           <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-            AD
+            {initials}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium leading-none">Admin</span>
-            <span className="text-xs text-muted-foreground">Gym Owner</span>
+            <span className="text-sm font-medium leading-none truncate max-w-32">{displayName}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-32">{session?.user.email}</span>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start mt-3 text-muted-foreground"
+          onClick={() => void signOut()}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </Button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListCheckins, useCreateCheckin, useListMembers } from "@workspace/api-client-react";
+import { useListCheckins, useCreateCheckin, useListMembers } from "@/services/supabase";
 import { format, parseISO } from "date-fns";
 import { CheckCircle2, History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";

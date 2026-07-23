@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetMember, useUpdateMember, getGetMemberQueryKey, MemberUpdatePlan, MemberUpdateStatus } from "@workspace/api-client-react";
+import { useGetMember, useUpdateMember } from "@/services/supabase";
 import { ArrowLeft, Edit2, Clock, CalendarDays, Target, Mail, Phone, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
 
 const editSchema = z.object({
   name: z.string().min(2),
@@ -30,10 +29,9 @@ export function MemberProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
 
-  const { data: member, isLoading } = useGetMember(Number(id));
+  const { data: member, isLoading } = useGetMember(id);
   const updateMember = useUpdateMember();
 
   const form = useForm<z.infer<typeof editSchema>>({
@@ -57,10 +55,9 @@ export function MemberProfile() {
   }, [member, form]);
 
   function onSubmit(values: z.infer<typeof editSchema>) {
-    updateMember.mutate({ id: Number(id), data: values }, {
+    updateMember.mutate({ id: id ?? "", data: values }, {
       onSuccess: (data) => {
         setEditOpen(false);
-        queryClient.setQueryData(getGetMemberQueryKey(Number(id)), data);
         toast({ title: "Profile updated" });
       },
       onError: () => {

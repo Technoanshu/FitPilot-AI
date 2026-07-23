@@ -1,9 +1,8 @@
 /**
- * Shared API service boundary.
+ * Supabase is the application data boundary.
  *
- * Domain queries and mutations are generated from the OpenAPI contract and
- * imported from @workspace/api-client-react by feature hooks and pages.
- * This module is intentionally small so future auth, telemetry, and request
- * policy concerns have one stable home without duplicating generated clients.
+ * Feature queries live in services/supabase and use the browser client with
+ * authenticated RLS. This module remains as a stable service namespace for
+ * future non-Supabase integrations without reintroducing mock or API data.
  */
-export const apiBasePath = "/api";
+export const dataProvider = "supabase" as const;

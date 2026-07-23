@@ -1,4 +1,4 @@
-import { useListInsights } from "@workspace/api-client-react";
+import { useListInsights } from "@/services/supabase";
 import { Lightbulb, AlertTriangle, Info, TrendingUp, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";

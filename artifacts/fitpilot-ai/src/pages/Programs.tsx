@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListPrograms, useCreateProgram } from "@workspace/api-client-react";
+import { useListPrograms, useCreateProgram } from "@/services/supabase";
 import { Plus, Dumbbell, BarChart, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useListMembers, useCreateMember, ListMembersStatus } from "@workspace/api-client-react";
+import { useListMembers, useCreateMember } from "@/services/supabase";
+import type { MemberStatus } from "@/lib/supabase/types";
 import { Search, Plus, User, MoreHorizontal, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ const memberFormSchema = z.object({
 
 export function Members() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<ListMembersStatus>("all");
+  const [status, setStatus] = useState<MemberStatus | "all">("all");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
