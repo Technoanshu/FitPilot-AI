@@ -1,86 +1,59 @@
-import React from 'react';
-import { useListInsights } from '@workspace/api-client-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Sparkles, AlertTriangle, ArrowRight, TrendingUp, Info } from 'lucide-react';
+import { useListInsights } from "@workspace/api-client-react";
+import { Lightbulb, AlertTriangle, Info, TrendingUp, Zap } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function Insights() {
   const { data: insights, isLoading } = useListInsights();
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return <AlertTriangle className="w-5 h-5 text-destructive" />;
-      case 'medium': return <TrendingUp className="w-5 h-5 text-primary" />;
-      default: return <Info className="w-5 h-5 text-muted-foreground" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'border-destructive/30 bg-destructive/5';
-      case 'medium': return 'border-primary/30 bg-primary/5';
-      default: return 'border-border bg-card';
-    }
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            AI Insights 
-            <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">Beta</span>
-          </h1>
-          <p className="text-muted-foreground mt-1">Operational intelligence generated from your gym's data.</p>
-        </div>
+    <div className="flex-1 space-y-6 p-6 md:p-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+          <Zap className="h-8 w-8 text-primary" /> AI Insights
+        </h1>
+        <p className="text-muted-foreground mt-1">Operational and member retention signals powered by your data.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pt-4">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="animate-pulse shadow-sm">
-              <CardContent className="p-6">
-                <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-                <div className="h-20 bg-muted rounded w-full mb-6"></div>
-                <div className="h-10 bg-muted rounded w-full"></div>
-              </CardContent>
-            </Card>
+          Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="border-border"><CardContent className="p-6 space-y-4"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-20 w-full" /></CardContent></Card>
           ))
-        ) : insights?.map((insight) => (
-          <Card key={insight.id} className={`shadow-sm border transition-colors ${getPriorityColor(insight.priority)}`}>
-            <CardContent className="p-6 flex flex-col h-full">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="mt-1 shrink-0">
-                  {getPriorityIcon(insight.priority)}
+        ) : (
+          insights?.map((insight) => (
+            <Card key={insight.id} className={`flex flex-col border-border shadow-sm group hover:-translate-y-1 transition-all duration-300 ${insight.priority === 'high' ? 'border-primary/50 bg-primary/5' : 'bg-card'}`}>
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-center gap-2">
+                    {insight.priority === 'high' ? <AlertTriangle className="h-5 w-5 text-primary" /> : 
+                     insight.priority === 'medium' ? <TrendingUp className="h-5 w-5 text-orange-500" /> :
+                     <Info className="h-5 w-5 text-blue-500" />}
+                    <CardTitle className="text-base font-bold leading-tight">{insight.title}</CardTitle>
+                  </div>
+                  <Badge variant={insight.priority === 'high' ? 'default' : 'secondary'} className="uppercase text-[10px] tracking-wider font-bold">
+                    {insight.priority}
+                  </Badge>
                 </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col justify-between pt-0">
                 <div>
-                  <h3 className="font-bold text-lg leading-tight">{insight.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{insight.summary}</p>
                   {insight.metric && (
-                    <div className="inline-block mt-2 px-2 py-0.5 bg-background rounded-md border border-border text-xs font-mono text-muted-foreground font-semibold">
-                      {insight.metric}
+                    <div className="mt-4 mb-2 p-3 bg-background rounded-md border border-border inline-block">
+                      <span className="font-mono text-lg font-bold text-foreground">{insight.metric}</span>
                     </div>
                   )}
                 </div>
-              </div>
-              
-              <p className="text-foreground/80 text-sm mb-6 flex-1">
-                {insight.summary}
-              </p>
-              
-              <Button className="w-full mt-auto" variant={insight.priority === 'high' ? 'destructive' : 'secondary'}>
-                {insight.action}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {(!insights || insights.length === 0) && !isLoading && (
-          <div className="col-span-full py-16 text-center text-muted-foreground bg-card border border-border rounded-xl flex flex-col items-center">
-            <Sparkles className="w-12 h-12 mb-4 text-muted-foreground/30" />
-            <p className="font-medium text-lg">No new insights right now.</p>
-            <p className="text-sm">Check back later as more data flows in.</p>
-          </div>
+                <div className="mt-6 pt-4 border-t border-border">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Recommended Action</p>
+                  <p className="text-sm font-medium text-foreground">{insight.action}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
     </div>

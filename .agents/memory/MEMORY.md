@@ -1,1 +1,2 @@
 - [Display timestamps](display-timestamps.md) — keep human-readable activity labels separate from ISO timestamps that require date parsing.
+- [Scratch rebuild boundaries](scratch-rebuild.md) — the current FitPilot model is isolated in fresh fp_* tables and React Router routes.

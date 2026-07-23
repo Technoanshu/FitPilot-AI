@@ -1,191 +1,211 @@
-import React from 'react';
-import { useGetDashboardOverview, useGetAttendanceTrend, useGetRecentActivity } from '@workspace/api-client-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Activity, Users, ArrowUpRight, ArrowDownRight, Clock, Target, CreditCard, Sparkles, CheckSquare } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-function StatCard({ title, value, change, icon: Icon, valuePrefix = '' }: { title: string, value: string | number, change?: number, icon: any, valuePrefix?: string }) {
-  const isPositive = change !== undefined && change >= 0;
-  
-  return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className="p-2 bg-primary/10 text-primary rounded-lg">
-            <Icon className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="flex items-baseline gap-3">
-          <h3 className="text-3xl font-bold font-mono tracking-tight">{valuePrefix}{value}</h3>
-          {change !== undefined && (
-            <div className={`flex items-center text-sm font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-500' : 'text-destructive'}`}>
-              {isPositive ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownRight className="w-4 h-4 mr-1" />}
-              {Math.abs(change)}%
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { Activity, ArrowUpRight, TrendingUp, Users, Calendar, CheckCircle2 } from "lucide-react";
+import { useGetDashboardOverview, useGetAttendanceTrend, useGetRecentActivity } from "@workspace/api-client-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export function Dashboard() {
   const { data: overview, isLoading: overviewLoading } = useGetDashboardOverview();
-  const { data: trend, isLoading: trendLoading } = useGetAttendanceTrend();
-  const { data: activities, isLoading: activitiesLoading } = useGetRecentActivity();
-
-  if (overviewLoading || trendLoading || activitiesLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-48 bg-muted rounded-md mb-8" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-card rounded-xl border border-border" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-[400px] bg-card rounded-xl border border-border" />
-          <div className="h-[400px] bg-card rounded-xl border border-border" />
-        </div>
-      </div>
-    );
-  }
+  const { data: attendance, isLoading: attendanceLoading } = useGetAttendanceTrend();
+  const { data: activity, isLoading: activityLoading } = useGetRecentActivity();
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-muted-foreground mt-1">Here's what's happening at your gym today.</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm bg-card border border-border px-4 py-2 rounded-full shadow-sm">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-medium">Live pulse active</span>
-        </div>
+    <div className="flex-1 space-y-6 p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Today's Pulse</h1>
+        <p className="text-muted-foreground text-lg">Your gym's performance at a glance.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Members" 
-          value={overview?.memberCount || 0} 
-          icon={Users} 
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title="Active Members"
+          value={overview?.activeMembers}
+          total={overview?.memberCount}
+          icon={Users}
+          loading={overviewLoading}
         />
-        <StatCard 
-          title="Attendance Rate" 
-          value={overview?.attendanceRate || 0} 
-          change={overview?.attendanceChange} 
-          icon={Target} 
-          valuePrefix=""
+        <MetricCard
+          title="Check-ins Today"
+          value={overview?.checkinsToday}
+          trend={overview?.attendanceChange}
+          icon={CheckCircle2}
+          loading={overviewLoading}
         />
-        <StatCard 
-          title="Monthly Revenue" 
-          value={(overview?.monthlyRevenue || 0).toLocaleString()} 
-          change={overview?.revenueChange} 
-          icon={CreditCard} 
-          valuePrefix="$"
+        <MetricCard
+          title="Monthly Revenue"
+          value={overview?.monthlyRevenue ? `$${(overview.monthlyRevenue / 1000).toFixed(1)}k` : undefined}
+          trend={overview?.revenueChange}
+          icon={TrendingUp}
+          loading={overviewLoading}
         />
-        <StatCard 
-          title="Check-ins Today" 
-          value={overview?.checkinsToday || 0} 
-          icon={Activity} 
+        <MetricCard
+          title="Active Programs"
+          value={overview?.programCount}
+          subtitle={`${overview?.classCount || 0} classes this week`}
+          icon={Activity}
+          loading={overviewLoading}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 shadow-sm">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4 border-border shadow-sm">
           <CardHeader>
-            <CardTitle>Attendance Flow</CardTitle>
-            <CardDescription>7-day rolling check-in volume against gym capacity.</CardDescription>
+            <CardTitle>Attendance Trend</CardTitle>
+            <CardDescription>Daily check-ins vs capacity over the last 14 days</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              {trend && trend.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorCheckins" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="label" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      dy={10}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontFamily: 'var(--font-mono)' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))', fontFamily: 'var(--font-mono)' }}
-                      itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="checkins" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorCheckins)" 
-                      activeDot={{ r: 6, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground">No trend data available</div>
-              )}
-            </div>
+          <CardContent className="h-[350px]">
+            {attendanceLoading ? (
+              <Skeleton className="w-full h-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={attendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCheckins" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="label" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="checkins" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorCheckins)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm flex flex-col">
+        <Card className="lg:col-span-3 border-border shadow-sm">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Live feed of operations.</CardDescription>
+            <CardDescription>Live feed of operations</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 overflow-auto">
-            <div className="space-y-6">
-              {activities && activities.length > 0 ? activities.map((activity) => (
-                <div key={activity.id} className="flex gap-4 relative">
-                  <div className="absolute left-4 top-8 bottom-[-24px] w-px bg-border last:hidden" />
-                  <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center relative z-10 ${
-                    activity.type === 'checkin' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                    activity.type === 'signup' ? 'bg-primary/20 text-primary' :
-                    activity.type === 'payment' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
-                    'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                  }`}>
-                    {activity.type === 'checkin' ? <CheckSquare className="w-4 h-4" /> :
-                     activity.type === 'signup' ? <Sparkles className="w-4 h-4" /> :
-                     activity.type === 'payment' ? <CreditCard className="w-4 h-4" /> :
-                     <Clock className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">{activity.detail}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-xs text-muted-foreground/70 font-mono">
-                        {activity.timestamp}
-                      </span>
-                      {activity.memberName && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-border" />
-                          <span className="text-xs font-medium text-foreground">{activity.memberName}</span>
-                        </>
-                      )}
+          <CardContent>
+            {activityLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex gap-4 items-center">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
                     </div>
                   </div>
-                </div>
-              )) : (
-                <div className="text-center py-8 text-muted-foreground">No recent activity.</div>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {activity?.slice(0, 6).map((item) => (
+                  <div key={item.id} className="flex gap-4">
+                    <div className="mt-0.5 relative flex items-center justify-center h-8 w-8 rounded-full bg-secondary text-primary shrink-0 border border-border">
+                      {item.type === 'checkin' && <CheckCircle2 className="h-4 w-4" />}
+                      {item.type === 'signup' && <Users className="h-4 w-4" />}
+                      {item.type === 'payment' && <TrendingUp className="h-4 w-4" />}
+                      {item.type === 'class' && <Calendar className="h-4 w-4" />}
+                      {item.type === 'program' && <Activity className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground flex gap-2 items-center">
+                        <span>{item.detail}</span>
+                        {item.memberName && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-border" />
+                            <span className="font-medium text-foreground">{item.memberName}</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground whitespace-nowrap font-mono">
+                      {item.timestamp}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+function MetricCard({ 
+  title, 
+  value, 
+  total, 
+  trend, 
+  subtitle, 
+  icon: Icon,
+  loading 
+}: { 
+  title: string;
+  value?: string | number;
+  total?: number;
+  trend?: number;
+  subtitle?: string;
+  icon: any;
+  loading?: boolean;
+}) {
+  return (
+    <Card className="border-border shadow-sm overflow-hidden relative group">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <Icon className="h-4 w-4 text-primary" />
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        ) : (
+          <>
+            <div className="text-3xl font-bold font-mono tracking-tight">
+              {value !== undefined ? value : "-"}
+              {total && <span className="text-lg text-muted-foreground font-normal"> / {total}</span>}
+            </div>
+            {(trend !== undefined || subtitle) && (
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                {trend !== undefined && (
+                  <span className={trend >= 0 ? "text-success" : "text-destructive"}>
+                    {trend >= 0 ? "+" : ""}{trend}%
+                  </span>
+                )}
+                {trend !== undefined ? "from last month" : subtitle}
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

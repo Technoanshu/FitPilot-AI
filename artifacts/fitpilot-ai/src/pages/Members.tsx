@@ -1,419 +1,254 @@
-import React, { useState } from 'react';
-import { useListMembers, useCreateMember, useUpdateMember, getListMembersQueryKey } from '@workspace/api-client-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, MoreHorizontal, User as UserIcon, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useListMembers, useCreateMember, ListMembersStatus } from "@workspace/api-client-react";
+import { Search, Plus, User, MoreHorizontal, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format, parseISO } from "date-fns";
 
-const memberSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
+const memberFormSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Valid email required"),
   phone: z.string().optional(),
-  plan: z.enum(['Core', 'Pro', 'Elite']),
+  plan: z.enum(["Core", "Pro", "Elite"]),
+  goal: z.string().min(2, "Goal is required"),
 });
-
-const memberEditSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
-  plan: z.enum(['Core', 'Pro', 'Elite']),
-  status: z.enum(['active', 'paused', 'overdue']),
-});
-
-function EditMemberDialog({ member, open, onOpenChange }: { member: any, open: boolean, onOpenChange: (open: boolean) => void }) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const updateMember = useUpdateMember();
-  
-  const form = useForm<z.infer<typeof memberEditSchema>>({
-    resolver: zodResolver(memberEditSchema),
-    values: {
-      name: member?.name || '',
-      email: member?.email || '',
-      phone: member?.phone || '',
-      plan: member?.plan || 'Core',
-      status: member?.status || 'active',
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof memberEditSchema>) => {
-    updateMember.mutate({ id: member.id, data: values }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListMembersQueryKey() });
-        toast({ title: "Member updated", description: `${values.name}'s profile has been updated.` });
-        onOpenChange(false);
-      },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to update member.", variant: "destructive" });
-      }
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Member</DialogTitle>
-          <DialogDescription>
-            Update the member's profile and status.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="plan"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Membership Plan</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a plan" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Core">Core</SelectItem>
-                        <SelectItem value="Pro">Pro</SelectItem>
-                        <SelectItem value="Elite">Elite</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="pt-4 flex justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="mr-2">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateMember.isPending}>
-                {updateMember.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function AddMemberDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const createMember = useCreateMember();
-  
-  const form = useForm<z.infer<typeof memberSchema>>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      plan: 'Core',
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof memberSchema>) => {
-    createMember.mutate({ data: values }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListMembersQueryKey() });
-        toast({ title: "Member added", description: `${values.name} has been added to the roster.` });
-        onOpenChange(false);
-        form.reset();
-      },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to add member.", variant: "destructive" });
-      }
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add New Member</DialogTitle>
-          <DialogDescription>
-            Enter the details of the new gym member.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+1 (555) 000-0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="plan"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Membership Plan</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a plan" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Core">Core</SelectItem>
-                      <SelectItem value="Pro">Pro</SelectItem>
-                      <SelectItem value="Elite">Elite</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="pt-4 flex justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="mr-2">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createMember.isPending}>
-                {createMember.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Add Member
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export function Members() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused' | 'overdue'>('all');
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<any>(null);
-  
-  const { data: members, isLoading } = useListMembers({ search: searchTerm, status: statusFilter });
-  
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<ListMembersStatus>("all");
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const { data: members, isLoading, refetch } = useListMembers({ search: search || undefined, status: status !== "all" ? status : undefined });
+  const createMember = useCreateMember();
+
+  const form = useForm<z.infer<typeof memberFormSchema>>({
+    resolver: zodResolver(memberFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      plan: "Core",
+      goal: "",
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof memberFormSchema>) {
+    createMember.mutate({ data: values }, {
+      onSuccess: () => {
+        setOpen(false);
+        form.reset();
+        refetch();
+        toast({ title: "Member added", description: `${values.name} has been added.` });
+      },
+      onError: (err) => {
+        toast({ title: "Error", description: "Could not add member.", variant: "destructive" });
+      }
+    });
+  }
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex-1 space-y-6 p-6 md:p-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground mt-1">Manage your gym's roster and statuses.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Members</h1>
+          <p className="text-muted-foreground mt-1">Manage your gym's community.</p>
         </div>
-        <Button 
-          onClick={() => setIsAddOpen(true)}
-          className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm hover:shadow"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Member
-        </Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" /> Add Member
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Member</DialogTitle>
+              <DialogDescription>Enter the details to enroll a new member.</DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl><Input placeholder="Alex Johnson" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="alex@example.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="phone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (Optional)</FormLabel>
+                      <FormControl><Input placeholder="555-0123" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="plan" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Core">Core</SelectItem>
+                          <SelectItem value="Pro">Pro</SelectItem>
+                          <SelectItem value="Elite">Elite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="goal" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Primary Goal</FormLabel>
+                    <FormControl><Input placeholder="e.g. Strength training, weight loss" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="pt-4 flex justify-end">
+                  <Button type="submit" disabled={createMember.isPending}>
+                    {createMember.isPending ? "Adding..." : "Add Member"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <AddMemberDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
-      {editingMember && (
-        <EditMemberDialog 
-          member={editingMember} 
-          open={!!editingMember} 
-          onOpenChange={(open) => !open && setEditingMember(null)} 
-        />
-      )}
-
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <div className="relative flex-1 max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search members..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-card border-border shadow-sm font-sans w-full"
+            placeholder="Search by name, email, or phone..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 w-full bg-card"
           />
         </div>
-        <div className="w-full sm:w-auto shrink-0">
-          <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
-            <SelectTrigger className="w-full sm:w-[150px] bg-card border-border shadow-sm">
-              <SelectValue placeholder="All Statuses" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+          <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+            <SelectTrigger className="w-full sm:w-[160px] bg-card">
+              <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">All Members</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="paused">Paused</SelectItem>
-              <SelectItem value="overdue">Overdue</SelectItem>
+              <SelectItem value="at_risk">At Risk</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <Card className="shadow-sm border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b border-border">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Member</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Plan</th>
-                <th className="px-6 py-4 font-semibold">Joined</th>
-                <th className="px-6 py-4 font-semibold">Last Visit</th>
-                <th className="px-6 py-4 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-card">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-32"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-16"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-16"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-24"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-24"></div></td>
-                    <td className="px-6 py-4"></td>
-                  </tr>
-                ))
-              ) : members?.map((member) => (
-                <tr key={member.id} className="hover:bg-muted/30 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm"
-                        style={{ backgroundColor: member.avatarColor || 'var(--primary)' }}
-                      >
-                        {member.name.charAt(0)}
+      {isLoading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i} className="border-border">
+              <CardContent className="p-4 flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-8 w-24 hidden md:block" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : members?.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg bg-card/50 border-dashed">
+          <User className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium text-foreground">No members found</h3>
+          <p className="text-muted-foreground mt-1 max-w-sm">
+            {search ? "No members match your search criteria." : "Get started by adding your first gym member."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {members?.map((member) => (
+            <Link key={member.id} to={`/members/${member.id}`}>
+              <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer group bg-card">
+                <CardContent className="p-4 sm:p-6 flex items-center gap-4 sm:gap-6">
+                  <div 
+                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm"
+                    style={{ backgroundColor: member.avatarColor }}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-base sm:text-lg text-foreground truncate group-hover:text-primary transition-colors">
+                          {member.name}
+                        </h3>
+                        {member.status === 'at_risk' && (
+                          <Badge variant="destructive" className="text-[10px] h-5 px-1.5 hidden sm:inline-flex">At Risk</Badge>
+                        )}
                       </div>
-                      <div>
-                        <div className="font-semibold text-foreground">{member.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono mt-0.5">{member.email}</div>
+                      <div className="text-sm text-muted-foreground truncate flex items-center gap-2">
+                        <span>{member.email}</span>
+                        {member.phone && (
+                          <>
+                            <span className="hidden sm:inline w-1 h-1 rounded-full bg-border" />
+                            <span className="hidden sm:inline">{member.phone}</span>
+                          </>
+                        )}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                      ${member.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 
-                        member.status === 'overdue' ? 'bg-destructive/10 text-destructive' : 
-                        'bg-muted text-muted-foreground'}`}>
-                      {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-medium">
-                    {member.plan}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground font-mono text-xs">
-                    {format(parseISO(member.joinedAt), 'MMM d, yyyy')}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground font-mono text-xs">
-                    {member.lastVisit ? format(parseISO(member.lastVisit), 'MMM d, yyyy') : 'Never'}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setEditingMember(member)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity font-medium"
-                    >
-                      Edit
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {(!members || members.length === 0) && !isLoading && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                    <UserIcon className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-                    <p>No members found</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+                    <div className="flex items-center gap-4 sm:gap-8">
+                      <div className="hidden md:flex flex-col items-end">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Plan</span>
+                        <span className="font-medium text-sm">{member.plan}</span>
+                      </div>
+                      
+                      <div className="hidden sm:flex flex-col items-end">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Visits/Mo</span>
+                        <span className="font-mono text-base font-bold">{member.visitsThisMonth}</span>
+                      </div>
+
+                      <div className="flex flex-col items-start sm:items-end">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold hidden sm:block">Status</span>
+                        <Badge variant={member.status === 'active' ? 'default' : member.status === 'paused' ? 'secondary' : 'destructive'} className="mt-1 sm:mt-0">
+                          {member.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button variant="ghost" size="icon" className="hidden sm:flex shrink-0 -mr-2">
+                    <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </div>
-      </Card>
+      )}
     </div>
   );
 }

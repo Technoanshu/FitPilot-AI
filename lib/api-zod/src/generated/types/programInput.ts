@@ -5,20 +5,16 @@
  * FitPilot AI gym management and personal fitness API
  * OpenAPI spec version: 0.2.0
  */
+import type { ProgramInputLevel } from './programInputLevel';
 
-export interface ClassInput {
+export interface ProgramInput {
   /** @minLength 1 */
   name: string;
   /** @minLength 1 */
-  coach: string;
-  /** @minLength 1 */
-  date: string;
-  /** @minLength 1 */
-  startTime: string;
-  /** @minimum 15 */
-  durationMinutes: number;
+  description: string;
+  level: ProgramInputLevel;
   /** @minimum 1 */
-  capacity: number;
-  /** @minLength 1 */
-  category: string;
+  weeks: number;
+  /** @minimum 1 */
+  sessionsPerWeek: number;
 }

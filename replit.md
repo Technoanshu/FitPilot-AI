@@ -1,6 +1,6 @@
 # FitPilot AI
 
-FitPilot AI is a premium gym management command center for owners and coaches to understand operations, manage members, coordinate classes, monitor attendance, and act on AI-assisted insights.
+FitPilot AI is an AI-powered gym management and personal fitness platform for gym owners, coaches, and members.
 
 ## Run & Operate
 
@@ -22,32 +22,43 @@ FitPilot AI is a premium gym management command center for owners and coaches to
 
 ## Where things live
 
-- `artifacts/fitpilot-ai/src/` — React application shell, layout, pages, forms, theme provider, and UI primitives
+- `artifacts/fitpilot-ai/src/components/` — reusable UI and layout components
+- `artifacts/fitpilot-ai/src/pages/` — route-level product surfaces
+- `artifacts/fitpilot-ai/src/layouts/` — layout exports and shell composition
+- `artifacts/fitpilot-ai/src/hooks/` — feature hooks and shared helpers
+- `artifacts/fitpilot-ai/src/contexts/` — shared context exports
+- `artifacts/fitpilot-ai/src/services/` — API service boundaries
+- `artifacts/fitpilot-ai/src/types/` — shared frontend types
+- `artifacts/fitpilot-ai/src/utils/` — shared pure utilities
+- `artifacts/fitpilot-ai/src/assets/` — app-owned asset location
 - `lib/api-spec/openapi.yaml` — source of truth for FitPilot API contracts
 - `artifacts/api-server/src/routes/fitpilot.ts` — FitPilot API routes
-- `artifacts/api-server/src/lib/fitpilot-seed.ts` — first-run seed data
-- `lib/db/src/schema/gym.ts` — persistent gym data model
+- `artifacts/api-server/src/lib/fitpilot-seed.ts` — first-run seed data for the fresh fp_* model
+- `lib/db/src/schema/fitpilot.ts` — persistent gym and fitness data model
 - `artifacts/fitpilot-ai/src/index.css` — shared light/dark theme tokens
 
 ## Architecture decisions
 
 - The frontend consumes generated OpenAPI hooks from `@workspace/api-client-react` rather than hand-written fetch types.
-- Gym records are persisted in the shared PostgreSQL database and are seeded only when the FitPilot tables are empty.
-- The app uses a focused operational shell with route-level pages for dashboard, members, schedule, attendance, and insights.
+- React Router owns route composition and nested layout rendering.
+- Gym and personal-fitness records use a fresh `fp_*` table namespace so this rebuild is isolated from the previous model.
+- The app uses a focused operational shell with route-level pages for overview, members, member profiles, programs, schedule, attendance, and insights.
 - Theme state is stored locally so each operator's light/dark preference persists between sessions.
 
 ## Product
 
-- Dashboard command center with live KPI cards, attendance trend, and recent activity.
-- Searchable member directory with status filters and add/edit flows.
+- Dashboard overview with live KPI cards, attendance trend, and recent activity.
+- Searchable member directory with status filters, add flow, and profile editing.
+- Member profile with goal, plan, timeline, and progress context.
+- Training program library with program creation.
 - Upcoming class schedule with capacity tracking and class creation.
-- Attendance view with manual check-ins that update member and activity data.
+- Attendance history with manual check-ins that update member and activity data.
 - AI-assisted insight feed for retention, class capacity, and growth opportunities.
 - Responsive layout and light/dark mode.
 
 ## User preferences
 
-- Premium startup-quality product experience inspired by Linear, Stripe, Notion, Framer, and Vercel.
+- Production-ready SaaS architecture with clean folder boundaries.
 - Avoid generic or dummy-looking UI; prioritize polished, functional flows.
 
 ## Gotchas

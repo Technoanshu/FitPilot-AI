@@ -2,7 +2,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { integer, pgTable, serial, text } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
-export const membersTable = pgTable("fitpilot_members", {
+export const fpMembersTable = pgTable("fp_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -12,29 +12,43 @@ export const membersTable = pgTable("fitpilot_members", {
   joinedAt: text("joined_at").notNull(),
   lastVisit: text("last_visit"),
   visitsThisMonth: integer("visits_this_month").notNull().default(0),
-  avatarColor: text("avatar_color").notNull().default("#8B5CF6"),
+  goal: text("goal").notNull(),
+  avatarColor: text("avatar_color").notNull(),
 });
 
-export const classesTable = pgTable("fitpilot_classes", {
+export const fpProgramsTable = pgTable("fp_programs", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  level: text("level").notNull(),
+  weeks: integer("weeks").notNull(),
+  sessionsPerWeek: integer("sessions_per_week").notNull(),
+  activeMembers: integer("active_members").notNull().default(0),
+  color: text("color").notNull(),
+});
+
+export const fpClassesTable = pgTable("fp_classes", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   coach: text("coach").notNull(),
+  date: text("date").notNull(),
   startTime: text("start_time").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   attendees: integer("attendees").notNull().default(0),
   capacity: integer("capacity").notNull(),
   category: text("category").notNull(),
-  color: text("color").notNull().default("#8B5CF6"),
+  color: text("color").notNull(),
 });
 
-export const checkinsTable = pgTable("fitpilot_checkins", {
+export const fpCheckinsTable = pgTable("fp_checkins", {
   id: serial("id").primaryKey(),
   memberId: integer("member_id").notNull(),
   memberName: text("member_name").notNull(),
   checkedInAt: text("checked_in_at").notNull(),
+  className: text("class_name"),
 });
 
-export const activityTable = pgTable("fitpilot_activity", {
+export const fpActivityTable = pgTable("fp_activity", {
   id: serial("id").primaryKey(),
   type: text("type").notNull(),
   title: text("title").notNull(),
@@ -43,7 +57,7 @@ export const activityTable = pgTable("fitpilot_activity", {
   memberName: text("member_name"),
 });
 
-export const insightsTable = pgTable("fitpilot_insights", {
+export const fpInsightsTable = pgTable("fp_insights", {
   id: serial("id").primaryKey(),
   priority: text("priority").notNull(),
   title: text("title").notNull(),
@@ -52,11 +66,10 @@ export const insightsTable = pgTable("fitpilot_insights", {
   metric: text("metric"),
 });
 
-export const insertMemberSchema = createInsertSchema(membersTable).omit({ id: true });
-export const insertClassSchema = createInsertSchema(classesTable).omit({ id: true });
-export const insertCheckinSchema = createInsertSchema(checkinsTable).omit({ id: true });
-export const insertActivitySchema = createInsertSchema(activityTable).omit({ id: true });
-export const insertInsightSchema = createInsertSchema(insightsTable).omit({ id: true });
+export const insertFpMemberSchema = createInsertSchema(fpMembersTable).omit({ id: true });
+export const insertFpProgramSchema = createInsertSchema(fpProgramsTable).omit({ id: true });
+export const insertFpClassSchema = createInsertSchema(fpClassesTable).omit({ id: true });
+export const insertFpCheckinSchema = createInsertSchema(fpCheckinsTable).omit({ id: true });
 
-export type Member = z.infer<typeof insertMemberSchema>;
-export type GymClass = z.infer<typeof insertClassSchema>;
+export type FpMemberInsert = z.infer<typeof insertFpMemberSchema>;
+export type FpProgramInsert = z.infer<typeof insertFpProgramSchema>;
