@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "FitPilot AI"
+version = "1.0.0"
+id = "artifacts/fitpilot-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25128
+
+[services.development]
+run = "pnpm --filter @workspace/fitpilot-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fitpilot-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/fitpilot-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25128"
+BASE_PATH = "/"

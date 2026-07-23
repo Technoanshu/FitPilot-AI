@@ -10,6 +10,16 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Gym dashboard operations
+  - name: members
+    description: Member management operations
+  - name: classes
+    description: Class scheduling operations
+  - name: attendance
+    description: Attendance operations
+  - name: insights
+    description: AI-assisted gym insights
 paths:
   /healthz:
     get:
@@ -24,6 +34,196 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/overview:
+    get:
+      operationId: getDashboardOverview
+      tags: [dashboard]
+      summary: Get dashboard overview
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardOverview"
+  /dashboard/attendance:
+    get:
+      operationId: getAttendanceTrend
+      tags: [dashboard]
+      summary: Get attendance trend
+      responses:
+        "200":
+          description: Attendance trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendancePoint"
+  /activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent gym activity
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+  /members:
+    get:
+      operationId: listMembers
+      tags: [members]
+      summary: List gym members
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, paused, overdue, all]
+            default: all
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+    post:
+      operationId: createMember
+      tags: [members]
+      summary: Create a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInput"
+      responses:
+        "201":
+          description: Created member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+  /members/{id}:
+    get:
+      operationId: getMember
+      tags: [members]
+      summary: Get a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "404":
+          description: Member not found
+    patch:
+      operationId: updateMember
+      tags: [members]
+      summary: Update a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List upcoming classes
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GymClass"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassInput"
+      responses:
+        "201":
+          description: Created class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GymClass"
+  /checkins:
+    post:
+      operationId: createCheckin
+      tags: [attendance]
+      summary: Record a member check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckinInput"
+      responses:
+        "201":
+          description: Check-in recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+  /insights:
+    get:
+      operationId: listInsights
+      tags: [insights]
+      summary: List AI-assisted gym insights
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Insight"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +233,109 @@ components:
           type: string
       required:
         - status
+    DashboardOverview:
+      type: object
+      properties:
+        memberCount: { type: integer }
+        activeMembers: { type: integer }
+        attendanceRate: { type: number }
+        attendanceChange: { type: number }
+        monthlyRevenue: { type: number }
+        revenueChange: { type: number }
+        checkinsToday: { type: integer }
+        upcomingClasses: { type: integer }
+      required: [memberCount, activeMembers, attendanceRate, attendanceChange, monthlyRevenue, revenueChange, checkinsToday, upcomingClasses]
+    AttendancePoint:
+      type: object
+      properties:
+        label: { type: string }
+        checkins: { type: integer }
+        capacity: { type: integer }
+      required: [label, checkins, capacity]
+    Activity:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [checkin, signup, payment, class] }
+        title: { type: string }
+        detail: { type: string }
+        timestamp: { type: string }
+        memberName: { type: ["string", "null"] }
+      required: [id, type, title, detail, timestamp, memberName]
+    Member:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: ["string", "null"] }
+        plan: { type: string, enum: [Core, Pro, Elite] }
+        status: { type: string, enum: [active, paused, overdue] }
+        joinedAt: { type: string }
+        lastVisit: { type: ["string", "null"] }
+        visitsThisMonth: { type: integer }
+        avatarColor: { type: string }
+      required: [id, name, email, phone, plan, status, joinedAt, lastVisit, visitsThisMonth, avatarColor]
+    MemberInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string }
+        phone: { type: string }
+        plan: { type: string, enum: [Core, Pro, Elite] }
+      required: [name, email, plan]
+    MemberUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string }
+        phone: { type: string }
+        plan: { type: string, enum: [Core, Pro, Elite] }
+        status: { type: string, enum: [active, paused, overdue] }
+    GymClass:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        coach: { type: string }
+        startTime: { type: string }
+        durationMinutes: { type: integer }
+        attendees: { type: integer }
+        capacity: { type: integer }
+        category: { type: string }
+        color: { type: string }
+      required: [id, name, coach, startTime, durationMinutes, attendees, capacity, category, color]
+    ClassInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        coach: { type: string, minLength: 1 }
+        startTime: { type: string }
+        durationMinutes: { type: integer, minimum: 15 }
+        capacity: { type: integer, minimum: 1 }
+        category: { type: string }
+      required: [name, coach, startTime, durationMinutes, capacity, category]
+    Checkin:
+      type: object
+      properties:
+        id: { type: integer }
+        memberId: { type: integer }
+        memberName: { type: string }
+        checkedInAt: { type: string }
+      required: [id, memberId, memberName, checkedInAt]
+    CheckinInput:
+      type: object
+      properties:
+        memberId: { type: integer }
+      required: [memberId]
+    Insight:
+      type: object
+      properties:
+        id: { type: integer }
+        priority: { type: string, enum: [high, medium, low] }
+        title: { type: string }
+        summary: { type: string }
+        action: { type: string }
+        metric: { type: ["string", "null"] }
+      required: [id, priority, title, summary, action, metric]
 

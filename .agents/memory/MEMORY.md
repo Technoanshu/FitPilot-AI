@@ -1,0 +1,1 @@
+- [Display timestamps](display-timestamps.md) — keep human-readable activity labels separate from ISO timestamps that require date parsing.
