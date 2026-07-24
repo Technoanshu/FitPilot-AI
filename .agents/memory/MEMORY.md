@@ -1,2 +1,3 @@
 - [Display timestamps](display-timestamps.md) — keep human-readable activity labels separate from ISO timestamps that require date parsing.
 - [Scratch rebuild boundaries](scratch-rebuild.md) — the current FitPilot model is isolated in fresh fp_* tables and React Router routes.
+- [FitPilot Supabase config](supabase-config.md) — project URL, env vars, migration file location, auth setup, and a gotcha about the URL vs key confusion.

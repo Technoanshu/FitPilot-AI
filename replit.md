@@ -1,73 +1,89 @@
 # FitPilot AI
 
-FitPilot AI is an AI-powered gym management and personal fitness platform for gym owners, coaches, and members.
+FitPilot AI is a production-ready SaaS gym management platform. Gym owners sign in, create members, schedule classes, track attendance, build training programs, and act on AI-powered insights. All data is read from and written to Supabase — no seed data, no mock data.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — Supabase browser client configuration
+- `pnpm --filter @workspace/fitpilot-ai run dev` — frontend dev server
+- `pnpm --filter @workspace/api-server run dev` — API server (health route only; app data goes through Supabase directly)
+- `pnpm --filter @workspace/fitpilot-ai run typecheck` — TypeScript check
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 19, Vite 7, React Router 7, TanStack Query, React Hook Form, Zod, Tailwind CSS, shadcn/ui
+- Backend-as-a-Service: Supabase (PostgreSQL, Auth, Storage, RLS)
+
+## Supabase Project
+
+- **Project URL:** `https://tlmnopuwyotjhbkzzomi.supabase.co`
+- **Migration:** `artifacts/fitpilot-ai/supabase/migrations/202607230001_fitpilot.sql`  
+  Run this once in Supabase Dashboard → SQL Editor to create all tables, indexes, triggers, RLS policies, and the `member-avatars` storage bucket.
+
+## Environment Variables
+
+| Key | Where set | Purpose |
+|-----|-----------|---------|
+| `VITE_SUPABASE_URL` | Replit shared env | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Replit shared env | Public anon/publishable key |
 
 ## Where things live
 
-- `artifacts/fitpilot-ai/src/components/` — reusable UI and layout components
-- `artifacts/fitpilot-ai/src/pages/` — route-level product surfaces
-- `artifacts/fitpilot-ai/src/layouts/` — layout exports and shell composition
-- `artifacts/fitpilot-ai/src/hooks/` — feature hooks and shared helpers
-- `artifacts/fitpilot-ai/src/contexts/` — shared context exports
-- `artifacts/fitpilot-ai/src/services/` — API service boundaries
-- `artifacts/fitpilot-ai/src/types/` — shared frontend types
-- `artifacts/fitpilot-ai/src/utils/` — shared pure utilities
-- `artifacts/fitpilot-ai/src/assets/` — app-owned asset location
-- `lib/api-spec/openapi.yaml` — source of truth for FitPilot API contracts
-- `artifacts/api-server/src/routes/fitpilot.ts` — FitPilot API routes
-- `artifacts/fitpilot-ai/supabase/migrations/202607230001_fitpilot.sql` — Supabase schema, triggers, Storage bucket, and RLS policies
-- `artifacts/fitpilot-ai/src/lib/supabase/` — browser client and shared Supabase types
-- `artifacts/fitpilot-ai/src/services/supabase/` — Auth, database query/mutation, and Storage helpers
-- `artifacts/fitpilot-ai/src/index.css` — shared light/dark theme tokens
+```
+artifacts/fitpilot-ai/src/
+  lib/supabase/
+    client.ts          — createClient singleton, isSupabaseConfigured guard
+    types.ts           — shared TypeScript interfaces for all entities
+  services/supabase/
+    auth.ts            — signIn / signUp / signOut / resetPassword / subscribeToAuth
+    queries.ts         — TanStack Query hooks for all features (members, programs, classes, checkins, activity, insights, dashboard)
+    storage.ts         — uploadMemberAvatar / createMemberAvatarUrl / deleteMemberAvatar
+    index.ts           — re-exports
+  contexts/
+    supabase-auth.tsx  — SupabaseAuthProvider + useSupabaseAuth hook
+  pages/
+    Auth.tsx           — sign-in / sign-up screen
+    Dashboard.tsx      — live KPI cards, attendance trend, activity feed
+    Members.tsx        — searchable member directory
+    MemberProfile.tsx  — individual member detail + edit
+    Programs.tsx       — training program library
+    Schedule.tsx       — class schedule with capacity tracking
+    Attendance.tsx     — check-in log + manual check-in
+    Insights.tsx       — AI-powered operational signals
+  supabase/migrations/
+    202607230001_fitpilot.sql  — full schema + RLS + storage
+```
 
 ## Architecture decisions
 
-- React Router owns route composition and nested layout rendering.
-- Supabase Auth owns sessions, and every data query is authenticated and RLS-scoped.
-- Supabase PostgreSQL is the only application data source; no mock or seed fallback is used.
-- Supabase Storage owns private member avatar files under the `member-avatars` bucket.
-- The app uses a focused operational shell with route-level pages for overview, members, member profiles, programs, schedule, attendance, and insights.
-- Theme state is stored locally so each operator's light/dark preference persists between sessions.
+- Every feature reads and writes through Supabase directly from the browser — no separate backend layer for application data.
+- Auth is handled by Supabase Auth (email/password). Sessions are persisted in localStorage and auto-refreshed.
+- Row Level Security ensures each gym account (`owner_id = auth.uid()`) can only access its own rows. No shared data between accounts.
+- The `profiles` table is auto-populated by a `handle_new_user` trigger on `auth.users` insert.
+- `VITE_` prefix env vars are exposed to the Vite build; the anon key is safe to expose since RLS enforces access control.
+- The old Express API / Drizzle / fp_* tables are still present as a health-check server but no longer serve application data.
 
-## Product
+## Product features
 
-- Dashboard overview with live KPI cards, attendance trend, and recent activity.
-- Searchable member directory with status filters, add flow, and profile editing.
-- Member profile with goal, plan, timeline, and progress context.
-- Training program library with program creation.
-- Upcoming class schedule with capacity tracking and class creation.
-- Attendance history with manual check-ins that update member and activity data.
-- AI-assisted insight feed for retention, class capacity, and growth opportunities.
-- Responsive layout and light/dark mode.
+- **Auth gate** — unauthenticated users see the sign-in/sign-up screen; authenticated users land on the dashboard.
+- **Dashboard** — live member count, check-ins today, program/class counts; 14-day attendance trend chart; recent activity feed.
+- **Members** — searchable by name/email/phone; filterable by status; add member form; click-through to full profile with edit.
+- **Member Profile** — goal, plan, status, visit history; inline edit dialog.
+- **Programs** — training program cards with level/duration/sessions; create form.
+- **Schedule** — upcoming classes with capacity bar; create class form.
+- **Attendance** — check-in log; manual check-in dialog linked to active members.
+- **Insights** — operational signal cards with priority, summary, metric, and recommended action.
+- **Storage** — member avatar uploads stored in the private `member-avatars` bucket with signed URLs.
+- **Dark/light mode** — persisted per device in localStorage.
 
 ## User preferences
 
-- Production-ready SaaS architecture with clean folder boundaries.
-- Avoid generic or dummy-looking UI; prioritize polished, functional flows.
+- Production-quality SaaS; no seed data or mock fallbacks.
+- Premium UI aesthetic inspired by Linear, Stripe, Notion, Framer, Vercel.
 
 ## Gotchas
 
-- Apply `artifacts/fitpilot-ai/supabase/migrations/202607230001_fitpilot.sql` in the Supabase SQL Editor before creating the first account.
-- Verify `pnpm --filter @workspace/fitpilot-ai run typecheck` after Supabase or UI changes.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Run the SQL migration in Supabase before the app will show real data (tables must exist for queries to succeed).
+- After changing frontend code, `pnpm --filter @workspace/fitpilot-ai run typecheck` must pass.
+- `VITE_SUPABASE_URL` must be a valid `https://` URL, not the publishable key string.
+- Storage RLS policies scope paths to `{owner_id}/{member_id}/{uuid}.ext` — upload paths must match this structure.
