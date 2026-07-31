@@ -26,7 +26,21 @@ export function Auth() {
   });
 
   async function submit(values: z.infer<typeof schema>) {
-    try {
+  console.log("STEP 1 - submit called", values);
+
+  try {
+    console.log("STEP 2 - before signIn");
+
+    if (mode === "signin") {
+      const result = await signIn({
+        email: values.email,
+        password: values.password,
+      });
+
+      console.log("STEP 3 - signIn success", result);
+
+      toast({ title: "Welcome back" });
+    }
       if (mode === "signin") {
         await signIn({ email: values.email, password: values.password });
         toast({ title: "Welcome back" });
@@ -35,10 +49,16 @@ export function Auth() {
         if (!result.session) toast({ title: "Confirm your email", description: "Check your inbox to finish creating your account." });
         else toast({ title: "Account created" });
       }
-    } catch (error) {
-      toast({ title: "Authentication failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
-    }
-  }
+    } 
+    catch (error) {
+  console.error("STEP 4 - signIn error", error);
+
+  toast({
+    title: "Authentication failed",
+    description: error instanceof Error ? error.message : "Please try again.",
+    variant: "destructive",
+  });
+}
 
   return (
     <main className="min-h-[100dvh] bg-background flex items-center justify-center p-6">
