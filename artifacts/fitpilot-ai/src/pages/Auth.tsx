@@ -99,7 +99,8 @@ console.log("ORIGIN =", window.location.origin);
       }
     } catch (error) {
       console.error("STEP 4 - auth error", error);
-
+console.error(error);
+console.error(JSON.stringify(error, null, 2));
       toast({
         title: "Authentication failed",
         description:
