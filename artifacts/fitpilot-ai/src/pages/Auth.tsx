@@ -134,9 +134,13 @@ export function Auth() {
           <CardContent>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(submit)}
-                className="space-y-4"
-              >
+  onSubmit={(e) => {
+    e.preventDefault();
+    console.log("FORM SUBMITTED");
+    submit(form.getValues());
+  }}
+  className="space-y-4"
+>
                 {mode === "signup" && (
                   <FormField
                     control={form.control}
