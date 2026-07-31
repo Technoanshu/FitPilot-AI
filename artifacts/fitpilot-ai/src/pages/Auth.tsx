@@ -54,6 +54,9 @@ export function Auth() {
 
   async function submit(values: z.infer<typeof schema>) {
     console.log("STEP 1 - submit called", values);
+    console.log("SUPABASE URL =", import.meta.env.VITE_SUPABASE_URL);
+console.log("ANON KEY EXISTS =", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log("ORIGIN =", window.location.origin);
 
     try {
       if (mode === "signin") {
