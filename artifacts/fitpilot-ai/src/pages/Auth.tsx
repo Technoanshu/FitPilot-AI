@@ -88,9 +88,17 @@ export function Auth() {
                 <FormField control={form.control} name="password" render={({ field }) => (
                   <FormItem><FormLabel>Password</FormLabel><FormControl><div className="relative"><LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" type="password" placeholder="At least 8 characters" {...field} /></div></FormControl><FormMessage /></FormItem>
                 )} />
-                <Button type="submit" className="w-full gap-2" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Working..." : mode === "signin" ? "Sign in" : "Create account"} <ArrowRight className="h-4 w-4" />
-                </Button>
+               <Button
+  type="button"
+  className="w-full gap-2"
+  onClick={() => {
+    console.log("BUTTON CLICKED");
+    console.log("VALUES:", form.getValues());
+    console.log("ERRORS:", form.formState.errors);
+  }}
+>
+  Test Button
+</Button>
               </form>
             </Form>
             <button type="button" className="w-full text-sm text-muted-foreground hover:text-foreground mt-5" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); form.reset(); }}>
