@@ -53,17 +53,28 @@ export function Auth() {
   });
 
   async function submit(values: z.infer<typeof schema>) {
+    console.log("STEP 1 - submit called", values);
+    console.log("SUPABASE URL =", import.meta.env.VITE_SUPABASE_URL);
+console.log("ANON KEY EXISTS =", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log("ORIGIN =", window.location.origin);
+
     try {
       if (mode === "signin") {
-        await signIn({
+        console.log("STEP 2 - before signIn");
+
+        const result = await signIn({
           email: values.email,
           password: values.password,
         });
+
+        console.log("STEP 3 - signIn success", result);
 
         toast({
           title: "Welcome back",
         });
       } else {
+        console.log("STEP 2 - before signUp");
+
         const result = await signUp(
           {
             email: values.email,
@@ -71,6 +82,8 @@ export function Auth() {
           },
           values.fullName || ""
         );
+
+        console.log("STEP 3 - signUp success", result);
 
         if (!result.session) {
           toast({
@@ -85,6 +98,9 @@ export function Auth() {
         }
       }
     } catch (error) {
+      console.error("STEP 4 - auth error", error);
+console.error(error);
+console.error(JSON.stringify(error, null, 2));
       toast({
         title: "Authentication failed",
         description:
@@ -122,9 +138,13 @@ export function Auth() {
           <CardContent>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(submit)}
-                className="space-y-4"
-              >
+  onSubmit={(e) => {
+    e.preventDefault();
+    console.log("FORM SUBMITTED");
+    submit(form.getValues());
+  }}
+  className="space-y-4"
+>
                 {mode === "signup" && (
                   <FormField
                     control={form.control}
@@ -132,9 +152,11 @@ export function Auth() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Full name</FormLabel>
+
                         <FormControl>
                           <div className="relative">
                             <UserRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
                             <Input
                               className="pl-9"
                               placeholder="Alex Johnson"
@@ -142,6 +164,7 @@ export function Auth() {
                             />
                           </div>
                         </FormControl>
+
                         <FormMessage />
                       </FormItem>
                     )}
@@ -154,9 +177,11 @@ export function Auth() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
+
                       <FormControl>
                         <div className="relative">
                           <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
                           <Input
                             type="email"
                             className="pl-9"
@@ -165,6 +190,7 @@ export function Auth() {
                           />
                         </div>
                       </FormControl>
+
                       <FormMessage />
                     </FormItem>
                   )}
@@ -176,9 +202,11 @@ export function Auth() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
+
                       <FormControl>
                         <div className="relative">
                           <LockKeyhole className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
                           <Input
                             type="password"
                             className="pl-9"
@@ -187,6 +215,7 @@ export function Auth() {
                           />
                         </div>
                       </FormControl>
+
                       <FormMessage />
                     </FormItem>
                   )}
