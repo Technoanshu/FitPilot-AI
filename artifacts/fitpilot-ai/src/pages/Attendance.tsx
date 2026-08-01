@@ -15,7 +15,7 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 
 const checkinSchema = z.object({
-  memberId: z.coerce.number().min(1, "Select a member"),
+  memberId: z.string().min(1, "Select a member"),
   className: z.string().optional(),
 });
 
@@ -65,7 +65,10 @@ export function Attendance() {
                 <FormField control={form.control} name="memberId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Member</FormLabel>
-                    <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : undefined}>
+                   <Select
+  onValueChange={field.onChange}
+  value={field.value}
+>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={membersLoading ? "Loading..." : "Select active member"} />
@@ -73,7 +76,10 @@ export function Attendance() {
                       </FormControl>
                       <SelectContent>
                         {members?.map(m => (
-                          <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                          <SelectItem
+  key={m.id}
+  value={m.id}
+></SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
