@@ -27,6 +27,7 @@ const queryKeys = {
   activity: ["supabase", "activity"] as const,
   insights: ["supabase", "insights"] as const,
   dashboard: ["supabase", "dashboard"] as const,
+  payments: ["supabase", "payments"] as const,
 };
 
 const AVATAR_COLORS = ["#F0A15C", "#7F8CF2", "#54B59A", "#D27D9B", "#5E9FBB", "#8B7DBA"];
@@ -729,6 +730,70 @@ export function useGetAttendanceTrend() {
           capacity: 0,
         };
       });
+    },
+  });
+}
+// ─── Payments ────────────────────────────────────────────────────────────────
+
+export function useListPayments() {
+  return useQuery({
+    queryKey: queryKeys.payments,
+    queryFn: async () => {
+      await getCurrentUserId();
+
+      const rows = await assertQuery(
+        supabase
+          .from("payments")
+          .select("*")
+          .order("payment_date", { ascending: false })
+      );
+
+      return rows ?? [];
+    },
+  });
+}
+
+export function useCreatePayment() {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      data: {
+        memberId: string;
+        amount: number;
+        paymentDate: string;
+        dueDate?: string;
+        method: string;
+        status: string;
+        notes?: string;
+      };
+    }) => {
+      const ownerId = await getCurrentUserId();
+
+      const row = await assertQuery(
+        supabase
+          .from("payments")
+          .insert({
+            owner_id: ownerId,
+            member_id: input.data.memberId,
+            amount: input.data.amount,
+            payment_date: input.data.paymentDate,
+            due_date: input.data.dueDate ?? null,
+            method: input.data.method,
+            status: input.data.status,
+            notes: input.data.notes ?? null,
+          })
+          .select()
+          .single()
+      );
+
+      return row;
+    },
+
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.payments });
+      client.invalidateQueries({ queryKey: queryKeys.dashboard });
+      client.invalidateQueries({ queryKey: queryKeys.members });
     },
   });
 }
